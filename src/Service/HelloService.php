@@ -2,14 +2,41 @@
 
 namespace App\Service;
 
+use App\Repository\HelloRepository;
+
 class HelloService
 {
-    private const MIN_LUCKY_NUMBER = 1;
-    private const MAX_LUCKY_NUMBER = 2;
-
-
-    public function generateLuckyNumber() : string
+    public function __construct(private readonly HelloRepository $helloRepository)
     {
-        return rand(self::MIN_LUCKY_NUMBER, self::MAX_LUCKY_NUMBER);
+
+    }
+    private const MIN_LUCKY_NUMBER = 1;
+    private const MAX_LUCKY_NUMBER = 3;
+
+    public function generateLuckyNumber(): string
+    {
+        $number = (string) rand(self::MIN_LUCKY_NUMBER, self::MAX_LUCKY_NUMBER);
+        return $this->helloRepository->createLuckyNumber($number)->getLuckyNumber();
+    }
+    
+    
+    
+    
+    
+    
+    
+    public function checkPrime(int $number): bool
+    {
+        if ($number <= 1) {
+            return false;
+        }
+
+        for ($i = 2; $i <= sqrt($number); $i++) {
+            if ($number % $i === 0) {
+                return false;
+            }
+        }
+
+        return true;
     }
 }

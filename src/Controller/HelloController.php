@@ -34,4 +34,15 @@ class HelloController extends AbstractController
         }
     }
 
+   
+   
+   
+    #[Route(path: '/prime/{number}', methods: ['GET'])]
+    public function isPrime(int $number): Response
+    {
+        $isPrime = $this->helloService->checkPrime($number);
+        $message = $isPrime ? "$number is a prime number." : "$number is not a prime number.";
+        return new Response($message);
+    }
+
 }
