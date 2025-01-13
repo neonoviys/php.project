@@ -3,12 +3,14 @@
 namespace App\Controller;
 
 use App\Entity\Application;
+use App\Entity\Portfolio;
 use App\Enums\ActionEnum;
 use App\Form\ApplicationType;
 use App\Form\DTO\CreateApplicationRequest;
 use App\Repository\ApplicationRepository;
 use App\Repository\StockRepository;
 use App\Repository\UserRepository;
+use App\Service\DealService;
 use LDAP\Result;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -20,7 +22,8 @@ class GlassController extends AbstractController
 {
     public function __construct(private readonly StockRepository $stockRepository,
     private readonly UserRepository $userRepository,
-    private readonly ApplicationRepository $applicationRepository)
+    private readonly ApplicationRepository $applicationRepository,
+    private readonly DealService $dealService)
     {
         
     }
@@ -58,13 +61,16 @@ class GlassController extends AbstractController
         $application->setPrice($price);
         $application->setUser(current($users));
 
-        $appropriateApplication = $this -> applicationRepository -> findAppropriate($application);
-        
-        $this->applicationRepository->saveApplication($application);
-        
+        $appropriateApplication = $this->applicationRepository->findAppropriate($application);
+        if($appropriateApplication !== null){
+            $this->dealService->execute($application, $appropriateApplication);
+        }else{
+            $this->applicationRepository->saveApplication($application);
+        }
 
-        return new Response("OK ");
+        return new Response("OK ", Response::HTTP_CREATED);
     }
+    
     #[Route('/glass/stock/{stockId}', name: 'app_stock_glass_update_application', methods:['PATCH'])]
 
     public function updateApplication(int $stockId, Request $request): Response
@@ -76,8 +82,15 @@ class GlassController extends AbstractController
         $application = $this->applicationRepository->find($applicationId);
         $application -> setQuantity($quantity);
         $application->setPrice($price);
+        
+        $appropriateApplication = $this->applicationRepository->findAppropriate($application);
+        if($appropriateApplication !== null){
+            $this->dealService->execute($application, $appropriateApplication);
+        }else{
+            $this->applicationRepository->saveApplication($application);
+        }
 
-        $this->applicationRepository->saveApplication($application);
+
         return new Response("OK", Response::HTTP_ACCEPTED);
     }
 

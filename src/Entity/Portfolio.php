@@ -6,6 +6,8 @@ use App\Repository\PortfolioRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
+use RuntimeException;
+use Twig\Error\RuntimeError;
 
 #[ORM\Entity(repositoryClass: PortfolioRepository::class)]
 class Portfolio
@@ -89,6 +91,51 @@ class Portfolio
         return $this->depositaries;
     }
 
+    public function addDepositaryQuantityByStock(Stock $stock, int $quantity): static
+    {
+       $depositary = $this->getDepositaries()->filter(function (Depositary $depositary) use ($stock){
+            return $depositary->getStock()->getId() === $stock?->getId();
+         })->first();
+        
+        if(!$depositary){
+            $depositary = (new Depositary())
+                ->setStock($stock)
+                ->setPortfolio($this)
+            ;
+            
+            $this->depositaries->add($depositary);
+        }
+        $depositary->addQuantity($quantity);
+
+        return $this;
+    }
+
+    public function subDepositaryQuantityByStockId(Stock $stock, int $quantity): static
+    {
+        $depositary = $this->getDepositaries()->filter(function (Depositary $depositary) use ($stock){
+            return $depositary->getStock()->getId() === $stock?->getId();
+         })->first();
+
+         if ($depositary === null){
+            throw new RuntimeException('Depositary not found for sub quantity');
+         }
+
+         if ($depositary->getQuantity()- $quantity = 0){
+            $this->removeDepositary($depositary);
+         }else{
+            $depositary->subQuantity($quantity);
+         }
+
+         return $this;
+    }
+
+
+
+
+
+
+
+
     public function addDepositary(Depositary $depositary): static
     {
         if (!$this->depositaries->contains($depositary)) {
@@ -99,15 +146,15 @@ class Portfolio
         return $this;
     }
 
-//    public function removeDepositary(Depositary $depositary): static
-//    {
-//        if ($this->depositaries->removeElement($depositary)) {
-//            // set the owning side to null (unless already changed)
-//            if ($depositary->getPortfolio() === $this) {
-//                $depositary->setPortfolio(null);
-//            }
-//        }
-//
-//        return $this;
-//    }
+   public function removeDepositary(Depositary $depositary): static
+   {
+       if ($this->depositaries->removeElement($depositary)) {
+           // set the owning side to null (unless already changed)
+           if ($depositary->getPortfolio() === $this) {
+               $depositary->setPortfolio(null);
+           }
+       }
+
+       return $this;
+   }
 }

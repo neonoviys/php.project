@@ -19,29 +19,24 @@ class ApplicationRepository extends ServiceEntityRepository
 
     public function findAppropriate(Application $application): ?Application
     {
-        return $this->createQueryBuilder('a')
-            ->where('a.stock_id = :stock_id')
+        return $this
+            ->createQueryBuilder('a')
+            ->where('a.stock = :stock')
             ->andWhere('a.quantity = :quantity')
             ->andWhere('a.price = :price')
             ->andWhere('a.action = :action')
-            ->andWhere('a.user_id = :user_id')
-            ->setParameters(
-                new ArrayCollection([
-                    'stock_id' => $application->getStock()->getId(),
-                    'quantity' => $application->getQuantity(),
-                    'price' => $application->getPrice(),
-                    'action' => $application->getAction()->getOpposite()->value,
-                    'user_id' => $application->getUser()->getId(),
-                    //'portfolios' => $application->getPortfolio()->getUser()->getPortfolios()
-                ])
-            )
+            ->andWhere('a.user != :user')
+            
+            ->setParameter('stock_id', $application->getStock()->getId())
+            ->setParameter('quantity', $application->getQuantity())
+            ->setParameter('price', $application->getPrice())
+            ->setParameter('action', $application->getAction()->getOpposite())
+            ->setParameter('user_id', $application->getUser())
+            
             ->getQuery()
             ->getOneOrNullResult()
             ;
     }
-
-
-
 
 
 
@@ -55,6 +50,12 @@ class ApplicationRepository extends ServiceEntityRepository
     public function removeApplication(Application $application): void
     {
         $this->getEntityManager()->remove($application);
+        $this->getEntityManager()->flush();
+    }
+
+
+    public function saveChanges() : void
+    {
         $this->getEntityManager()->flush();
     }
 
